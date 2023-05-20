@@ -37,7 +37,7 @@ exports.registration = async (req, res) => {
 }
 
 const createToken = (user, status, res) => {
-    const jwtToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecret', {expiresIn: '1h'})
+    const jwtToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecret', {expiresIn: 60})
 
     res.cookie('jwt', jwtToken, { httpOnly: true });
 
