@@ -1,15 +1,9 @@
 const jwt = require('jsonwebtoken')
 const dbConnectionPool = require('../database/database')
 const { promisify } = require('util')
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient } = require('@prisma/client');
+const { errorProvider, catchAsync } = require('../utils/errorProvider');
 const prisma = new PrismaClient()
-
-const errorProvider = (res, message, status) => {
-    res.status(status).json({
-        message,
-    })
-}
-
 
 exports.tokenChecker = async (req, res, next) => {
     const token = req.headers?.cookie
@@ -84,25 +78,26 @@ exports.getAllQuote = async (req, res) => {
     }
 }
 
-exports.getSpecificQuote = async (req, res) => {
+exports.getSpecificQuote = catchAsync(async (req, res, next) => {
     const {id} = req.user;
+    const quotes = await prisma.quote.findMany({
+        where: {
+            userId: id
+        }
+    })
+    
+    errorProvider(res, 'Unsuccessful', 400, 'fasda', 456513, quotes)
 
-    try{
-        const quotes = await prisma.quote.findMany({
-            where: {
-                userId: id
-            }
-        })
-
-        res.status(200).json({
-            count: quotes.length,
-            quotes
-        })
-    }catch (err) {
-        console.log(err.message)
-        res.status(400).json({
-            status: 'Unsuccessful',
-            message: err.message
-        })
-    }
-}
+    // try{
+    //     res.status(200).json({
+    //         count: quotes.length,
+    //         quotes
+    //     })
+    // }catch (err) {
+    //     console.log(err.message)
+    //     // res.status(400).json({
+    //     //     status: 'Unsuccessful',
+    //     //     message: err.message
+    //     // })
+    // }
+})

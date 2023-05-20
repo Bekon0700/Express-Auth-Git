@@ -1,14 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
-
-const { PrismaClient } = require('@prisma/client')
+const { PrismaClient } = require('@prisma/client');
+const { errorProvider } = require('../utils/errorProvider');
 const prisma = new PrismaClient()
-
-const errorProvider = (res, message, status) => {
-    res.status(status).json({
-        message,
-    })
-}
 
 exports.registration = async (req, res) => {
     const {name, phone, password} = req.body
@@ -29,6 +23,7 @@ exports.registration = async (req, res) => {
         })
     }catch (err) {
         console.log(err.message)
+        return errorProvider(res, 'Registration Error', 403)
         res.status(200).json({
             status: 'Registration Error',
             message: err.message
