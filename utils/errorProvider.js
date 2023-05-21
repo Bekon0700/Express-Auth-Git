@@ -11,6 +11,9 @@ exports.catchAsync = (fn) => {
             await fn(req, res, next)
         } catch (err) {
             console.log(err)
+            res.status(403).json({
+                message: err.message
+            })
         }
     }
 }

@@ -1,7 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-
 // DATABASE_URL="mysql://root:Emdad@5023@127.0.0.1:3306/quotedb"
 
 generator client {
@@ -19,11 +18,19 @@ model User {
   phone    String  @unique @db.VarChar(11)
   password String  @db.VarChar(150)
   quotes   Quote[]
+  tokens   Token[]
 }
 
 model Quote {
   id     Int    @id @default(autoincrement())
   quote  String @db.VarChar(150)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId Int 
+  userId Int
+}
+
+model Token {
+  id           Int    @id @default(autoincrement())
+  refreshToken String @db.VarChar(300)
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId       Int
 }

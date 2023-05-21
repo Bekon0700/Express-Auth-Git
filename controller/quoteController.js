@@ -1,24 +1,20 @@
 const jwt = require('jsonwebtoken')
-const dbConnectionPool = require('../database/database')
+
 const { promisify } = require('util')
 const { PrismaClient } = require('@prisma/client');
 const { errorProvider, catchAsync } = require('../utils/errorProvider');
 const prisma = new PrismaClient()
 
-exports.tokenChecker = async (req, res, next) => {
+exports.tokenChecker = catchAsync(async (req, res, next) => {
     const token = req.headers?.cookie
     if(!token) {
        return errorProvider(res, 'invalid Token', 403);
     }
     
-    try {
-        const jwtVerification = await promisify(jwt.verify)(token.split('=')[1], 'superSecret')
-    } catch ( err ) {
-        return errorProvider(res, 'token error -' + err.message, 403)
-    }
-
+    const jwtVerification = await promisify(jwt.verify)(token.split('=')[1], 'superSecret')
+    
     if( !jwtVerification ) {
-        return errorProvider(res, 'token error', 403)
+        return errorProvider(res, 'token error -' + err.message, 403)
     }
 
     const user = await prisma.user.findUniqueOrThrow({
@@ -34,7 +30,7 @@ exports.tokenChecker = async (req, res, next) => {
     req.user = user;
 
     next()
-}
+});
 
 exports.createQuote = async (req, res) => {
     const {quote} = req.body
