@@ -34,11 +34,9 @@ exports.registration = async (req, res) => {
 const createToken = (user, status, res) => {
     const accessToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecret', {expiresIn: 60})
 
-    console.log(user)
-
-    // const refreshToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecretRefresh', {expiresIn: '30d'})
-
     res.cookie('jwt', accessToken, { httpOnly: true });
+
+    user.password = undefined;
 
     res.status(status).json({
         status: 'success',
@@ -66,14 +64,20 @@ exports.login = catchAsync(async (req, res) => {
 
     const refreshToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecretRefresh', {expiresIn: '30d'})
 
-    const getRefreshToken = await prisma.token.create({
-        data: {
+    await prisma.token.upsert({
+        where: {
+            userId: user.id
+        },
+        update: {
+            refreshToken
+        },
+        create: {
             refreshToken,
             userId: user.id
         }
     })
 
-    console.log(getRefreshToken)
+    console.log(req.headers)
 
     createToken(user, 200, res)
 
