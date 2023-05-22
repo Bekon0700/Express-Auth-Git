@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const { PrismaClient } = require('@prisma/client');
 const { errorProvider, catchAsync } = require('../utils/errorProvider');
+const { promisify } = require('util')
 const prisma = new PrismaClient()
 
 exports.registration = async (req, res) => {
@@ -31,8 +32,8 @@ exports.registration = async (req, res) => {
     }
 }
 
-const createToken = (user, status, res) => {
-    const accessToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecret', {expiresIn: 60})
+const createToken = (user, status, res, refreshToken=undefined) => {
+    const accessToken = jwt.sign({phone: user.phone, id: user.id}, 'superSecret', {expiresIn: 60})
 
     res.cookie('jwt', accessToken, { httpOnly: true });
 
@@ -41,7 +42,8 @@ const createToken = (user, status, res) => {
     res.status(status).json({
         status: 'success',
         user,
-        accessToken
+        accessToken, 
+        refreshToken
     })
 }
 
@@ -62,7 +64,7 @@ exports.login = catchAsync(async (req, res) => {
         })
     }
 
-    const refreshToken = jwt.sign({phone: user.phone, id: user.user_id}, 'superSecretRefresh', {expiresIn: '30d'})
+    const refreshToken = jwt.sign({phone: user.phone, id: user.id}, 'superSecretRefresh', {expiresIn: '30d'})
 
     await prisma.token.upsert({
         where: {
@@ -77,8 +79,24 @@ exports.login = catchAsync(async (req, res) => {
         }
     })
 
-    console.log(req.headers)
+    createToken(user, 200, res, refreshToken)
 
-    createToken(user, 200, res)
+})
 
+exports.getRefreshToken = catchAsync(async (req, res) => {
+    const {refreshToken} = req.body;
+    
+    const jwtVerification = await promisify(jwt.verify)(refreshToken, 'superSecretRefresh')
+
+    const getUserToken = await prisma.token.findUniqueOrThrow({
+        where: {
+            userId: jwtVerification.id
+        }
+    })
+
+    if ( !(refreshToken == getUserToken.refreshToken) ) {
+        return new errorProvider(res, 'Invalid Token - please log in', 403)
+    }
+
+    createToken(jwtVerification, 200, res)
 })
